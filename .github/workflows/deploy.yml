@@ -89,9 +89,64 @@ jobs:
 
              echo "Checking application health"
              curl --fail http://localhost:5000/health
-
              
+      - name: Send failure email
+        if: failure()
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[FAILED] CI/CD-HeroVired Deployment"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_FROM }}
+          body: |
+            CI/CD deployment FAILED.
 
-            
-          
-        
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit SHA: ${{ github.sha }}
+
+            Stage results:
+            Test: ${{ steps.test.outcome }}
+            Build: ${{ steps.build.outcome }}
+            Push: ${{ steps.push.outcome }}
+            Deploy: ${{ steps.deploy.outcome }}
+
+            Pipeline run:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Send success email
+        if: success()
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[SUCCESS] CI/CD-HeroVired Deployment"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_FROM }}
+          body: |
+            CI/CD deployment completed successfully.
+
+            Repository: ${{ github.repository }}
+            Status: SUCCESS
+
+            Branch deployed:
+            ${{ github.ref_name }}
+
+            Git commit SHA:
+            ${{ github.sha }}
+
+            Docker image pushed to ECR:
+            691317217805.dkr.ecr.ap-south-1.amazonaws.com/flask-practice:${{ github.sha }}
+
+            EC2 target:
+            ${{ secrets.EC2_HOST }}
+
+            Pipeline run:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}   
