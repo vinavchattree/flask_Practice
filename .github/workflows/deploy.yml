@@ -19,22 +19,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4      
 
+      
       - name: install python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      - name: Set test stage
+        run: echo "FAILED_STAGE=test" >> $GITHUB_ENV
+
+
       - name: install dependencies
         run: pip install -r requirements.txt    
 
       - name: Run tests
-        run: pytest
+        id: test
+        run: |
+         echo "FAILED_STAGE=test" >> $GITHUB_ENV
+         pytest
 
       - name: Build Docker image
+        id: build
         run: |
+         echo "FAILED_STAGE=build" >> $GITHUB_ENV
          docker build -t flask-practice:${{ github.sha }} .
+
+      - name: Set push stage
+        run: echo "FAILED_STAGE=push" >> $GITHUB_ENV
+
+        
          
-      - name: EC2 credentials
+      - name: AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -46,15 +61,21 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Tag and push image to ECR
+        id: push
         env: 
          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
          REPOSITORY: flask-practice
          IMAGE_TAG: ${{ github.sha }}
         run: |
+         echo "FAILED_STAGE=push" >> $GITHUB_ENV
          docker tag flask-practice:$IMAGE_TAG $REGISTRY/$REPOSITORY:$IMAGE_TAG
          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
+      - name: Set deploy stage
+        run: echo "FAILED_STAGE=deploy" >> $GITHUB_ENV
+
       - name: EC2-Deployment
+        id: deploy
         uses: appleboy/ssh-action@v1.2.2
         with: 
           host: ${{ secrets.EC2_HOST }}
@@ -108,6 +129,8 @@ jobs:
             Repository: ${{ github.repository }}
             Branch: ${{ github.ref_name }}
             Commit SHA: ${{ github.sha }}
+
+            Failed Stage : ${{ env.FAILED_STAGE }}
 
             Stage results:
             Test: ${{ steps.test.outcome }}
