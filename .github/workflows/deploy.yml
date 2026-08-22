@@ -10,13 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     
     env: 
-      MONGO_URI: ${{ secrets.MONGO_TEST_URI }}
-    
-    services:
-      mongodb:
-       image: mongo:7
-       ports:
-         - 27017:27017
+      MONGO_URI: ${{ secrets.MONGO_TEST_URI }}    
       
 
     steps:
