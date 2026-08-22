@@ -32,4 +32,4 @@ jobs:
 
       - name: Build Docker image
         run: |
-         docker build -t flask:pratice:${{ github.sha }} .
+         docker build -t flask-practice:${{ github.sha }} .
