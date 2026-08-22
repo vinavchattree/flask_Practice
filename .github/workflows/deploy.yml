@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4      
 
       - name: install python
         uses: actions/setup-python@v5
@@ -33,3 +33,24 @@ jobs:
       - name: Build Docker image
         run: |
          docker build -t flask-practice:${{ github.sha }} .
+         
+      - name: EC2 credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Amazon ECR login
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag and push image to ECR
+        env: 
+         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+         REPOSITORY: flask-practice
+         IMAGE_TAG: ${{ github.sha }}
+        run: |
+         docker tag flask-practice:$IMAGE_TAG $REGISTRY/$REPOSITORY:$IMAGE_TAG
+         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          
